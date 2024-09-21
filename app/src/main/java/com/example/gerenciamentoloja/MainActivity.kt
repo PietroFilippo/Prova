@@ -34,7 +34,6 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.gerenciamentoloja.ui.theme.GerenciamentoLojaTheme
 import com.example.gerenciamentoloja.ui.theme.ProdutosGerenciamento
 
 class MainActivity : ComponentActivity() {
@@ -62,6 +61,7 @@ fun AppNavigation() {
                 Text("Produto não encontrado.")
             }
         }
+        composable("estatisticas") { TelaEstatisticas(navController) }
     }
 }
 
@@ -148,23 +148,24 @@ fun TelaCadastro(navController: NavController) {
                 val precoDouble = preco.toDoubleOrNull()
                 val quantidadeInt = quantidade.toIntOrNull()
 
-                if (precoDouble != null && quantidadeInt != null && precoDouble >= 0 && quantidadeInt >= 0) {
+                if (precoDouble != null && quantidadeInt != null && precoDouble > 0 && quantidadeInt > 0) {
                     val novoProduto = Produto(nome, categoria, precoDouble, quantidadeInt)
-                    ProdutosGerenciamento.listaProdutos.add(novoProduto)
+                    if (Estoque.adicionarProduto(novoProduto)) {
 
-                    // Limpar campos após o cadastro
-                    nome = ""
-                    categoria = ""
-                    preco = ""
-                    quantidade = ""
+                        nome = ""
+                        categoria = ""
+                        preco = ""
+                        quantidade = ""
 
-                    Toast.makeText(context, "Produto cadastrado com sucesso!", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, "Produto cadastrado com sucesso!", Toast.LENGTH_LONG).show()
+                    } else {
+                        Toast.makeText(context, "Falha ao cadastrar produto.", Toast.LENGTH_LONG).show()
+                    }
                 } else {
-                    Toast.makeText(context, "Preço e Quantidade devem ser numéricos e maiores ou iguais a zero", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, "Preço e Quantidade devem ser numéricos e maiores que zero", Toast.LENGTH_LONG).show()
                 }
             }
-        },
-            modifier = Modifier.fillMaxWidth()) {
+        }, modifier = Modifier.fillMaxWidth()) {
             Text("Cadastrar")
         }
 
@@ -202,9 +203,14 @@ fun TelaListaProdutos(navController: NavController) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Botão para voltar à tela de cadastro
         Button(onClick = { navController.navigate("cadastro") }) {
             Text("Voltar para Cadastro")
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Button(onClick = { navController.navigate("estatisticas") }) {
+            Text("Estatísticas")
         }
     }
 }
@@ -223,9 +229,34 @@ fun TelaDetalhesProduto(produtoJson: String, navController: NavController) {
         Text("Categoria: ${produto.categoria}", fontSize = 20.sp)
         Text("Preço: R$ ${produto.preco}", fontSize = 20.sp)
         Text("Quantidade em Estoque: ${produto.quantidade} unidades", fontSize = 20.sp)
+
         Spacer(modifier = Modifier.height(16.dp))
+
         Button(onClick = { navController.navigate("lista") }) {
             Text("Voltar para Lista")
+        }
+    }
+}
+
+@Composable
+fun TelaEstatisticas(navController: NavController) {
+    val valorTotal = Estoque.calcularValorTotalEstoque()
+    val quantidadeTotal = Estoque.quantidadeTotalProdutos()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Text("Estatísticas do Estoque", fontSize = 24.sp, modifier = Modifier.padding(bottom = 16.dp))
+
+        Text("Valor Total do Estoque: R$ ${"%.2f".format(valorTotal)}", fontSize = 20.sp)
+        Text("Quantidade Total de Produtos: $quantidadeTotal", fontSize = 20.sp)
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(onClick = { navController.navigate("lista") }) {
+            Text("Voltar para Lista de Produtos")
         }
     }
 }
